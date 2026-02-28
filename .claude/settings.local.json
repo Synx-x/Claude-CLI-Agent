@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Skill(claude-developer-platform)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process:*)"
+    ]
+  }
+}
