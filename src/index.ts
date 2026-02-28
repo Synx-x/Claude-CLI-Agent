@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
-import { STORE_DIR, TELEGRAM_BOT_TOKEN } from './config.js';
+import { STORE_DIR, TELEGRAM_BOT_TOKEN, ALLOWED_CHAT_ID } from './config.js';
 import { initDatabase } from './db.js';
 import { runDecaySweep } from './memory.js';
 import { cleanupOldUploads } from './media.js';
@@ -98,7 +98,17 @@ async function main(): Promise<void> {
   // Start
   try {
     await bot.start({
-      onStart: () => logger.info('ClaudeClaw running'),
+      onStart: async () => {
+        logger.info('ClaudeClaw running');
+        // Notify owner that bot is online
+        if (ALLOWED_CHAT_ID) {
+          try {
+            await bot.api.sendMessage(Number(ALLOWED_CHAT_ID), '🟢 ClaudeClaw is online');
+          } catch (e) {
+            logger.warn({ err: e }, 'Failed to send startup notification');
+          }
+        }
+      },
     });
   } catch (err) {
     logger.error({ err }, 'Failed to start bot. Check TELEGRAM_BOT_TOKEN in .env');
