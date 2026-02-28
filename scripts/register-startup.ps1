@@ -1,6 +1,8 @@
+$startupScript = Join-Path $PSScriptRoot 'startup.ps1'
+
 $action = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
-    -Argument '-WindowStyle Hidden -NonInteractive -File "C:\Users\User\source\repos\claude\scripts\startup.ps1"'
+    -Argument "-WindowStyle Hidden -NonInteractive -File `"$startupScript`""
 
 $trigger = New-ScheduledTaskTrigger -AtLogon -User $env:USERNAME
 

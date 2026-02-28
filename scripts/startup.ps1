@@ -1,5 +1,5 @@
 # ClaudeClaw + Claude Code side-by-side startup
-$repo = "C:\Users\User\source\repos\claude"
+$repo = Split-Path -Parent $PSScriptRoot
 
 
 $launchScript = "$repo\scripts\launch-claude.ps1"
