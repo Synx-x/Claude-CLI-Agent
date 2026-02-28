@@ -108,9 +108,23 @@ The setup wizard handles everything interactively.
 
 ## Running
 
+The preferred way is the startup script — opens the bot and a Claude Code session side by side in Windows Terminal:
+
+```powershell
+powershell -File scripts\startup.ps1
+```
+
+This is also registered as a Task Scheduler job so both panes launch automatically at login. To re-register after a fresh clone:
+
+```powershell
+powershell -File scripts\register-startup.ps1
+```
+
+Other options:
+
 ```bash
-npm start        # builds fresh from source, then runs
-npm run dev      # tsx direct (no build step, for development)
+npm start        # bot only — builds fresh from source, then runs
+npm run dev      # tsx direct, no build step (development)
 npm run status   # health check — tokens, voice, DB, scheduler
 ```
 

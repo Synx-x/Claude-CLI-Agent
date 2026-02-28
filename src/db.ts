@@ -150,6 +150,14 @@ export function getMemoryCount(chatId: string): number {
   return row.cnt;
 }
 
+export function insertCheckpoint(chatId: string, summary: string): void {
+  const now = Math.floor(Date.now() / 1000);
+  getDb().prepare(`
+    INSERT INTO memories (chat_id, topic_key, content, sector, salience, created_at, accessed_at)
+    VALUES (?, 'checkpoint', ?, 'semantic', 5.0, ?, ?)
+  `).run(chatId, summary, now, now);
+}
+
 // --- Scheduler CRUD ---
 
 export function createTask(id: string, chatId: string, prompt: string, schedule: string, nextRun: number): void {

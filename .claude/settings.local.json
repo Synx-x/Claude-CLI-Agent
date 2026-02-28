@@ -7,7 +7,11 @@
       "Bash(curl:*)",
       "Bash(node:*)",
       "Bash(tasklist:*)",
-      "Bash(wmic process:*)"
+      "Bash(wmic process:*)",
+      "Bash(where wt:*)",
+      "Bash(where claude:*)",
+      "Bash(powershell:*)",
+      "Bash(grep:*)"
     ]
   }
 }
