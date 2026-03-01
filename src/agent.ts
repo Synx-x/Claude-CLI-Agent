@@ -5,6 +5,13 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { PROJECT_ROOT } from './config.js';
 import { logger } from './logger.js';
+import { runOpenRouter } from './openrouter.js';
+
+export let openRouterModel = 'thudm/glm-4-32b:free';
+
+export function setOpenRouterModel(model: string): void {
+  openRouterModel = model;
+}
 
 const CODEX_TIMEOUT_MS = 120_000;
 
@@ -183,9 +190,10 @@ type ProviderRunner = (
 export const providerRegistry: Record<string, ProviderRunner> = {
   claude: (msg, sessionId, onTyping, onEvent) => runAgent(msg, sessionId, onTyping, onEvent),
   codex: async (msg) => ({ text: await runCodexFallback(msg) }),
+  openrouter: async (msg) => ({ text: await runOpenRouter(msg, openRouterModel) }),
 };
 
-export const providerFallbackOrder = ['claude', 'codex'];
+export const providerFallbackOrder = ['claude', 'codex', 'openrouter'];
 
 export async function runWithFallback(
   message: string,

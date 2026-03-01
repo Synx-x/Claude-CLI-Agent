@@ -24,6 +24,9 @@ export const ELEVENLABS_VOICE_ID = env['ELEVENLABS_VOICE_ID'] ?? '';
 // Video
 export const GOOGLE_API_KEY = env['GOOGLE_API_KEY'] ?? '';
 
+// OpenRouter
+export const OPENROUTER_API_KEY = env['OPENROUTER_API_KEY'] ?? '';
+
 // Limits
 export const MAX_MESSAGE_LENGTH = 4096;
 export const TYPING_REFRESH_MS = 4000;

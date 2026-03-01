@@ -23,9 +23,10 @@ function startProcess() {
   }
   child = spawn('node', ['dist/index.js'], { cwd: ROOT, stdio: 'inherit' });
   child.on('exit', (code) => {
-    if (!restarting && code !== 0 && code !== null) {
-      console.error(`[start] Process exited with code ${code}`);
-    }
+    if (restarting) return;
+    if (code === 0) return;
+    console.log(`[start] Process exited with code ${code} — restarting in 1s...`);
+    setTimeout(() => startProcess(), 1000);
   });
 }
 

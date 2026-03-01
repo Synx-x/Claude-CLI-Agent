@@ -1,4 +1,4 @@
-import { Bot, Context, InputFile } from 'grammy';
+import { Bot, Context, InputFile, InlineKeyboard } from 'grammy';
 import type { MessageEntity } from 'grammy/types';
 import { markdownToFormattable } from '@gramio/format/markdown';
 import {
@@ -13,7 +13,8 @@ import { join, resolve } from 'path';
 import { execFile } from 'child_process';
 import { homedir } from 'os';
 import { PROJECT_ROOT } from './config.js';
-import { runWithFallback, AgentEvent } from './agent.js';
+import { runWithFallback, AgentEvent, setOpenRouterModel, openRouterModel } from './agent.js';
+import { fetchOpenRouterModels } from './openrouter.js';
 import { buildMemoryContext, saveConversationTurn } from './memory.js';
 import { transcribeAudio, synthesizeSpeech, voiceCapabilities } from './voice.js';
 import { downloadMedia, buildPhotoMessage, buildDocumentMessage, buildVideoMessage } from './media.js';
@@ -24,8 +25,10 @@ import { randomUUID } from 'crypto';
 // Voice mode toggle per chat — default ON for allowed chat
 const voiceMode = new Set<string>(ALLOWED_CHAT_ID ? [ALLOWED_CHAT_ID] : []);
 
-// Active provider per chat — 'claude' | 'codex', default claude
-const activeProvider = new Map<string, 'claude' | 'codex'>();
+// Active provider per chat — 'claude' | 'codex' | 'openrouter', default claude
+const activeProvider = new Map<string, 'claude' | 'codex' | 'openrouter'>();
+
+const OR_PER_PAGE = 8;
 
 // --- Telegram entity-based formatter ---
 
@@ -156,13 +159,13 @@ async function handleMessage(ctx: Context, rawText: string, forceVoiceReply = fa
       if (event.errorDetail) {
         ctx.reply(`<code>${event.errorDetail}</code>`, { parse_mode: 'HTML' }).catch(() => {});
       }
+      const labelOf = (p: string) =>
+        p === 'codex' ? 'OpenAI Codex' : p === 'openrouter' ? `OpenRouter (${openRouterModel})` : 'Claude';
       if (event.to === 'none') {
-        updateStatus(`🚫 <b>Both providers rate limited</b>\nClaude + Codex unavailable`);
+        ctx.reply(`🚫 <b>All providers rate limited</b>`, { parse_mode: 'HTML' }).catch(() => {});
       } else {
-        const fromLabel = event.from === 'codex' ? 'Codex' : 'Claude';
-        const toLabel = event.to === 'codex' ? 'OpenAI Codex' : 'Claude';
         const reasonLabel = event.reason === 'rate limited' ? 'rate limited' : 'unavailable';
-        updateStatus(`🔄 <b>${fromLabel} ${reasonLabel}</b> — switching to ${toLabel}...`);
+        ctx.reply(`🔄 <b>${labelOf(event.from)} ${reasonLabel}</b> — switched to ${labelOf(event.to)}`, { parse_mode: 'HTML' }).catch(() => {});
       }
     }
   };
@@ -367,17 +370,99 @@ export function createBot(): Bot {
     const current = activeProvider.get(chatId) ?? 'claude';
 
     if (!arg) {
-      await ctx.reply(`Active provider: **${current}**\n\nSwitch with: /provider claude or /provider codex`);
+      const modelNote = current === 'openrouter' ? `\nModel: \`${openRouterModel}\`` : '';
+      await ctx.reply(`Active provider: **${current}**${modelNote}\n\nSwitch with: /provider claude, /provider codex, or /provider openrouter`);
       return;
     }
 
-    if (arg !== 'claude' && arg !== 'codex') {
-      await ctx.reply('Unknown provider. Use: /provider claude or /provider codex');
+    if (arg === 'claude' || arg === 'codex') {
+      activeProvider.set(chatId, arg);
+      await ctx.reply(`Switched to **${arg}**. All messages will now go to ${arg === 'codex' ? 'OpenAI Codex' : 'Claude'}.`);
       return;
     }
 
-    activeProvider.set(chatId, arg);
-    await ctx.reply(`Switched to **${arg}**. All messages will now go to ${arg === 'codex' ? 'OpenAI Codex' : 'Claude'}.`);
+    if (arg === 'openrouter') {
+      const keyboard = new InlineKeyboard()
+        .text('🆓 Free', 'or:l:free:0')
+        .text('💰 Paid', 'or:l:paid:0')
+        .text('📋 All', 'or:l:all:0');
+      await ctx.reply('OpenRouter — pick a filter:', { reply_markup: keyboard });
+      return;
+    }
+
+    await ctx.reply('Unknown provider. Use: /provider claude, /provider codex, or /provider openrouter');
+  });
+
+  bot.on('callback_query:data', async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    if (!data.startsWith('or:')) { await ctx.answerCallbackQuery(); return; }
+
+    const chatId = String(ctx.chat?.id ?? ctx.callbackQuery.from.id);
+    if (!isAuthorised(Number(chatId))) { await ctx.answerCallbackQuery('Unauthorized'); return; }
+
+    if (data.startsWith('or:l:')) {
+      // or:l:<filter>:<page>
+      const parts = data.split(':');
+      const filter = parts[2];
+      const page = parseInt(parts[3]);
+
+      let models;
+      try {
+        models = await fetchOpenRouterModels();
+      } catch (err) {
+        await ctx.answerCallbackQuery('Failed to fetch models');
+        return;
+      }
+
+      const filteredWithIdx = models
+        .map((m, i) => ({ m, i }))
+        .filter(({ m }) => filter === 'free' ? m.isFree : filter === 'paid' ? !m.isFree : true);
+
+      const start = page * OR_PER_PAGE;
+      const pageItems = filteredWithIdx.slice(start, start + OR_PER_PAGE);
+
+      const keyboard = new InlineKeyboard();
+      for (const { m, i } of pageItems) {
+        const label = (m.isFree ? '🆓 ' : '💰 ') + m.name.slice(0, 35);
+        keyboard.text(label, `or:s:${i}`).row();
+      }
+
+      const navRow: Array<[string, string]> = [];
+      if (page > 0) navRow.push(['◀ Prev', `or:l:${filter}:${page - 1}`]);
+      if (start + OR_PER_PAGE < filteredWithIdx.length) navRow.push(['Next ▶', `or:l:${filter}:${page + 1}`]);
+      if (navRow.length > 0) {
+        for (const [label, cb] of navRow) keyboard.text(label, cb);
+      }
+
+      const filterLabel = filter === 'free' ? '🆓 Free' : filter === 'paid' ? '💰 Paid' : '📋 All';
+      const totalPages = Math.ceil(filteredWithIdx.length / OR_PER_PAGE);
+      await ctx.editMessageText(
+        `${filterLabel} models — ${filteredWithIdx.length} total (page ${page + 1}/${totalPages}):`,
+        { reply_markup: keyboard }
+      );
+      await ctx.answerCallbackQuery();
+
+    } else if (data.startsWith('or:s:')) {
+      const index = parseInt(data.slice(5));
+      let models;
+      try {
+        models = await fetchOpenRouterModels();
+      } catch {
+        await ctx.answerCallbackQuery('Failed to fetch models');
+        return;
+      }
+      const model = models[index];
+      if (!model) { await ctx.answerCallbackQuery('Model not found'); return; }
+
+      setOpenRouterModel(model.id);
+      activeProvider.set(chatId, 'openrouter');
+
+      await ctx.editMessageText(
+        `✅ Switched to OpenRouter\nModel: <b>${model.name}</b>\n<code>${model.id}</code>`,
+        { parse_mode: 'HTML' }
+      );
+      await ctx.answerCallbackQuery('Model selected');
+    }
   });
 
   bot.command('restart', async (ctx) => {
