@@ -25,7 +25,10 @@
       "Bash(npm test:*)",
       "Bash(sort:*)",
       "Bash(ls:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(codex:*)",
+      "Bash(npx:*)",
+      "Bash(where codex:*)"
     ]
   }
 }

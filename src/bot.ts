@@ -13,7 +13,7 @@ import { join, resolve } from 'path';
 import { execFile } from 'child_process';
 import { homedir } from 'os';
 import { PROJECT_ROOT } from './config.js';
-import { runAgent, AgentEvent } from './agent.js';
+import { runWithFallback, AgentEvent } from './agent.js';
 import { buildMemoryContext, saveConversationTurn } from './memory.js';
 import { transcribeAudio, synthesizeSpeech, voiceCapabilities } from './voice.js';
 import { downloadMedia, buildPhotoMessage, buildDocumentMessage, buildVideoMessage } from './media.js';
@@ -23,6 +23,9 @@ import { randomUUID } from 'crypto';
 
 // Voice mode toggle per chat — default ON for allowed chat
 const voiceMode = new Set<string>(ALLOWED_CHAT_ID ? [ALLOWED_CHAT_ID] : []);
+
+// Active provider per chat — 'claude' | 'codex', default claude
+const activeProvider = new Map<string, 'claude' | 'codex'>();
 
 // --- Telegram entity-based formatter ---
 
@@ -149,11 +152,29 @@ async function handleMessage(ctx: Context, rawText: string, forceVoiceReply = fa
       updateStatus(`⚙️ <b>${event.tool}</b>\n${detail}`);
     } else if (event.kind === 'tool_progress' && event.elapsed >= 3) {
       updateStatus(`⚙️ <b>${lastTool}</b> (${Math.round(event.elapsed)}s)`);
+    } else if (event.kind === 'provider_switch') {
+      if (event.errorDetail) {
+        ctx.reply(`<code>${event.errorDetail}</code>`, { parse_mode: 'HTML' }).catch(() => {});
+      }
+      if (event.to === 'none') {
+        updateStatus(`🚫 <b>Both providers rate limited</b>\nClaude + Codex unavailable`);
+      } else {
+        const fromLabel = event.from === 'codex' ? 'Codex' : 'Claude';
+        const toLabel = event.to === 'codex' ? 'OpenAI Codex' : 'Claude';
+        const reasonLabel = event.reason === 'rate limited' ? 'rate limited' : 'unavailable';
+        updateStatus(`🔄 <b>${fromLabel} ${reasonLabel}</b> — switching to ${toLabel}...`);
+      }
     }
   };
 
+  const provider = activeProvider.get(chatId) ?? 'claude';
+
   try {
-    const { text, newSessionId } = await runAgent(fullMessage, sessionId, sendTyping, onEvent);
+    let text: string | null = null;
+    let newSessionId: string | undefined;
+
+    ({ text, newSessionId } = await runWithFallback(fullMessage, provider, sessionId, sendTyping, onEvent));
+
     clearInterval(typingInterval);
 
     // Remove live status message
@@ -202,7 +223,8 @@ async function handleMessage(ctx: Context, rawText: string, forceVoiceReply = fa
   } catch (err) {
     clearInterval(typingInterval);
     logger.error({ err }, 'Message handling error');
-    await ctx.reply('Something went wrong. Check the logs.');
+    const msg = err instanceof Error ? err.message : String(err);
+    await ctx.reply(`<b>Error</b>\n<code>${msg}</code>`, { parse_mode: 'HTML' });
   }
 }
 
@@ -335,6 +357,27 @@ export function createBot(): Bot {
       logger.error({ err }, 'checkpoint error');
       await ctx.reply('Failed to save checkpoint.');
     }
+  });
+
+  bot.command('provider', async (ctx) => {
+    if (!isAuthorised(ctx.chat.id)) return;
+
+    const chatId = String(ctx.chat.id);
+    const arg = ctx.message?.text?.replace('/provider', '').trim().toLowerCase();
+    const current = activeProvider.get(chatId) ?? 'claude';
+
+    if (!arg) {
+      await ctx.reply(`Active provider: **${current}**\n\nSwitch with: /provider claude or /provider codex`);
+      return;
+    }
+
+    if (arg !== 'claude' && arg !== 'codex') {
+      await ctx.reply('Unknown provider. Use: /provider claude or /provider codex');
+      return;
+    }
+
+    activeProvider.set(chatId, arg);
+    await ctx.reply(`Switched to **${arg}**. All messages will now go to ${arg === 'codex' ? 'OpenAI Codex' : 'Claude'}.`);
   });
 
   bot.command('restart', async (ctx) => {
@@ -483,6 +526,7 @@ export function createBot(): Bot {
     { command: 'convolife', description: 'Check context window usage %' },
     { command: 'checkpoint', description: 'Save summary to memory (high salience)' },
     { command: 'schedule', description: 'list|create|delete|pause|resume tasks' },
+    { command: 'provider', description: 'Switch provider: claude or codex' },
     { command: 'restart', description: 'Restart the bot service' },
     { command: 'chatid', description: 'Display your Telegram chat ID' },
   ]);
