@@ -28,7 +28,8 @@
       "Bash(python3:*)",
       "Bash(codex:*)",
       "Bash(npx:*)",
-      "Bash(where codex:*)"
+      "Bash(where codex:*)",
+      "Bash(Get-ScheduledTask:*)"
     ]
   }
 }

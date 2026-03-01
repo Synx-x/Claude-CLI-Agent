@@ -1,2 +1,2 @@
 Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue
-claude
+claude --dangerously-skip-permissions
