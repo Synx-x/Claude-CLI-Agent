@@ -11,7 +11,21 @@
       "Bash(where wt:*)",
       "Bash(where claude:*)",
       "Bash(powershell:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebSearch",
+      "WebFetch(domain:core.telegram.org)",
+      "WebFetch(domain:mergram.dev)",
+      "WebFetch(domain:kroki.io)",
+      "WebFetch(domain:gramio.dev)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:jsr.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:grammy.dev)",
+      "Bash(npm test:*)",
+      "Bash(sort:*)",
+      "Bash(ls:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -1,12 +1,24 @@
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
-import { STORE_DIR, TELEGRAM_BOT_TOKEN, ALLOWED_CHAT_ID } from './config.js';
+import { execFile } from 'child_process';
+import { STORE_DIR, TELEGRAM_BOT_TOKEN, ALLOWED_CHAT_ID, PROJECT_ROOT } from './config.js';
 import { initDatabase } from './db.js';
 import { runDecaySweep } from './memory.js';
 import { cleanupOldUploads } from './media.js';
 import { createBot } from './bot.js';
 import { initScheduler, stopScheduler } from './scheduler.js';
 import { logger } from './logger.js';
+
+function ingestSessions(): void {
+  const script = resolve(PROJECT_ROOT, 'scripts/ingest-sessions.js');
+  execFile(process.execPath, [script], (err, stdout, stderr) => {
+    if (err) {
+      logger.warn({ err, stderr }, 'ingest-sessions failed');
+    } else {
+      logger.info({ output: stdout.trim() }, 'ingest-sessions complete');
+    }
+  });
+}
 
 const PID_FILE = resolve(STORE_DIR, 'claudeclaw.pid');
 
@@ -100,6 +112,7 @@ async function main(): Promise<void> {
     await bot.start({
       onStart: async () => {
         logger.info('ClaudeClaw running');
+        ingestSessions();
         // Notify owner that bot is online
         if (ALLOWED_CHAT_ID) {
           try {

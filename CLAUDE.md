@@ -54,11 +54,24 @@ Common patterns:
 ## Message Format
 
 - Keep responses tight and readable
-- Use plain text over heavy markdown
 - For long outputs: summary first, offer to expand
 - Voice messages arrive as `[Voice transcribed]: ...` — treat as normal text, execute commands
 - For heavy multi-step tasks: send progress updates via [PATH]/scripts/notify.sh "message"
 - Do NOT send notify for quick tasks — use judgment
+
+## Rich Formatting (always evaluate)
+
+Responses are rendered via Telegram entities from Markdown. Always ask: does structure make this clearer?
+
+- **Code** — always use backticks. Fenced blocks with language tag for multi-line
+- **Steps or flows** — numbered list or bold step headers, not prose
+- **Comparisons or options** — structured list with bold labels
+- **Key terms** — bold on first meaningful use
+- **Callouts / quotes** — blockquote (`>`)
+- **Links** — always `[text](url)`, never raw URLs
+- **Sections in long replies** — bold headers to break it up
+
+Default to structured Markdown. Plain prose only for short conversational replies.
 
 ## Memory
 
@@ -75,7 +88,14 @@ Check remaining context window:
 4. Report: "Context window: XX% used — ~XXk tokens remaining"
 
 ### `checkpoint`
-Save session summary to SQLite:
+Save session summary to SQLite and session log:
 1. Write 3-5 bullet summary of key decisions/findings
-2. Insert into memories table as semantic memory with salience 5.0
-3. Confirm: "Checkpoint saved. Safe to /newchat."
+2. Append the summary as a dated entry to `~/.claude/projects/C--Users-User-source-repos-claude/memory/sessions.md`
+3. Run `node [PATH]/scripts/ingest-sessions.js` to sync sessions.md into the memories table
+4. Confirm: "Checkpoint saved. Safe to /newchat."
+
+### Session logging (automatic)
+At the start of every new Claude Code session:
+1. Append a new dated `## YYYY-MM-DD` section to `~/.claude/projects/C--Users-User-source-repos-claude/memory/sessions.md`
+2. Include "Session opened" and a brief note on what was carried over from the previous session (based on MEMORY.md and git status)
+3. At session end or on `checkpoint`, update that entry with key decisions/findings from the session

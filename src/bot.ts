@@ -1,4 +1,6 @@
 import { Bot, Context, InputFile } from 'grammy';
+import type { MessageEntity } from 'grammy/types';
+import { markdownToFormattable } from '@gramio/format/markdown';
 import {
   TELEGRAM_BOT_TOKEN,
   ALLOWED_CHAT_ID,
@@ -7,7 +9,8 @@ import {
 } from './config.js';
 import { getSession, setSession, clearSession, getMemoryCount, createTask, listTasks, deleteTask, pauseTask, resumeTask, insertCheckpoint } from './db.js';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import { execFile } from 'child_process';
 import { homedir } from 'os';
 import { PROJECT_ROOT } from './config.js';
 import { runAgent, AgentEvent } from './agent.js';
@@ -21,85 +24,59 @@ import { randomUUID } from 'crypto';
 // Voice mode toggle per chat — default ON for allowed chat
 const voiceMode = new Set<string>(ALLOWED_CHAT_ID ? [ALLOWED_CHAT_ID] : []);
 
-// --- Telegram HTML formatter ---
+// --- Telegram entity-based formatter ---
 
-export function formatForTelegram(text: string): string {
-  // Extract and protect code blocks
-  const codeBlocks: string[] = [];
-  let processed = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-    const escaped = escapeHtml(code.trimEnd());
-    const block = lang ? `<pre><code class="language-${lang}">${escaped}</code></pre>` : `<pre>${escaped}</pre>`;
-    codeBlocks.push(block);
-    return `\x00CODEBLOCK${codeBlocks.length - 1}\x00`;
-  });
-
-  // Inline code
-  processed = processed.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
-
-  // Escape HTML in remaining text (but not our placeholders/tags)
-  processed = escapeHtmlSelective(processed);
-
-  // Headings
-  processed = processed.replace(/^#{1,6}\s+(.+)$/gm, '<b>$1</b>');
-
-  // Bold: **text** or __text__
-  processed = processed.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-  processed = processed.replace(/__(.+?)__/g, '<b>$1</b>');
-
-  // Italic: *text* or _text_ (not inside words)
-  processed = processed.replace(/(?<!\w)\*([^*]+?)\*(?!\w)/g, '<i>$1</i>');
-  processed = processed.replace(/(?<!\w)_([^_]+?)_(?!\w)/g, '<i>$1</i>');
-
-  // Strikethrough
-  processed = processed.replace(/~~(.+?)~~/g, '<s>$1</s>');
-
-  // Links
-  processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  // Checkboxes
-  processed = processed.replace(/- \[ \]/g, '\u2610');
-  processed = processed.replace(/- \[x\]/g, '\u2611');
-
-  // Strip horizontal rules
-  processed = processed.replace(/^[-*]{3,}\s*$/gm, '');
-
-  // Restore code blocks
-  processed = processed.replace(/\x00CODEBLOCK(\d+)\x00/g, (_, idx) => codeBlocks[parseInt(idx)]);
-
-  return processed.trim();
+interface Formattable {
+  text: string;
+  entities: MessageEntity[];
 }
 
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export function formatForTelegram(markdown: string): Formattable {
+  const result = markdownToFormattable(markdown.trim());
+  return { text: result.text, entities: (result.entities ?? []) as MessageEntity[] };
 }
 
-function escapeHtmlSelective(text: string): string {
-  // Escape & < > but skip our code placeholders and already-converted tags
-  return text
-    .replace(/&(?!amp;|lt;|gt;)/g, '&amp;')
-    .replace(/<(?!\/?(b|i|s|u|code|pre|a)\b|!--)/g, '&lt;')
-    .replace(/(?<!<\/(b|i|s|u|code|pre|a)|--)>/g, (match, group) => {
-      if (group) return match;
-      return '&gt;';
-    });
-}
+export function splitMessage(formattable: Formattable, limit = MAX_MESSAGE_LENGTH): Formattable[] {
+  const { text, entities } = formattable;
+  if (text.length <= limit) return [formattable];
 
-export function splitMessage(text: string, limit = MAX_MESSAGE_LENGTH): string[] {
-  if (text.length <= limit) return [text];
+  const chunks: Formattable[] = [];
+  let offset = 0;
 
-  const chunks: string[] = [];
-  let remaining = text;
+  while (offset < text.length) {
+    let end = Math.min(offset + limit, text.length);
 
-  while (remaining.length > limit) {
-    let splitAt = remaining.lastIndexOf('\n', limit);
-    if (splitAt <= 0) splitAt = remaining.lastIndexOf(' ', limit);
-    if (splitAt <= 0) splitAt = limit;
+    // Try to split on newline or space to avoid cutting words
+    if (end < text.length) {
+      const slice = text.slice(offset, end);
+      const nlPos = slice.lastIndexOf('\n');
+      const spPos = slice.lastIndexOf(' ');
+      if (nlPos > 0) end = offset + nlPos + 1;
+      else if (spPos > 0) end = offset + spPos + 1;
+    }
 
-    chunks.push(remaining.slice(0, splitAt));
-    remaining = remaining.slice(splitAt).trimStart();
+    const chunkText = text.slice(offset, end).trimEnd();
+    const chunkStart = offset;
+
+    // Re-map entities that fall within this chunk
+    const chunkEntities: MessageEntity[] = entities
+      .filter(e => e.offset < end && e.offset + e.length > chunkStart)
+      .map(e => ({
+        ...e,
+        offset: Math.max(e.offset, chunkStart) - chunkStart,
+        length: Math.min(e.offset + e.length, end) - Math.max(e.offset, chunkStart),
+      }))
+      .filter(e => e.length > 0);
+
+    if (chunkText) {
+      chunks.push({ text: chunkText, entities: chunkEntities });
+    }
+
+    offset = end;
+    // Skip leading newlines at new offset
+    while (offset < text.length && text[offset] === '\n') offset++;
   }
 
-  if (remaining) chunks.push(remaining);
   return chunks;
 }
 
@@ -212,13 +189,15 @@ async function handleMessage(ctx: Context, rawText: string, forceVoiceReply = fa
 
     // Text reply (always sent)
     const formatted = formatForTelegram(text);
-    const chunks = splitMessage(formatted);
+    const chunks = splitMessage(formatted).filter(c => c.text.trim());
+    if (chunks.length === 0) {
+      await ctx.reply('(no response)');
+      return;
+    }
     for (const chunk of chunks) {
-      try {
-        await ctx.reply(chunk, { parse_mode: 'HTML' });
-      } catch {
-        await ctx.reply(chunk);
-      }
+      await ctx.reply(chunk.text, {
+        entities: chunk.entities.length > 0 ? chunk.entities : undefined,
+      });
     }
   } catch (err) {
     clearInterval(typingInterval);
@@ -346,6 +325,11 @@ export function createBot(): Bot {
 
     try {
       insertCheckpoint(chatId, text);
+      const script = resolve(PROJECT_ROOT, 'scripts/ingest-sessions.js');
+      execFile(process.execPath, [script], (err, stdout, stderr) => {
+        if (err) logger.warn({ err, stderr }, 'ingest-sessions failed on checkpoint');
+        else logger.info({ output: stdout.trim() }, 'ingest-sessions complete on checkpoint');
+      });
       await ctx.reply('Checkpoint saved. Safe to /newchat.');
     } catch (err) {
       logger.error({ err }, 'checkpoint error');

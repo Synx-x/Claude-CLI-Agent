@@ -7,3 +7,4 @@ workspace/
 *.pid
 /.vs
 **/*.mp3
+downloads/
