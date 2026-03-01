@@ -21,6 +21,7 @@ import { downloadMedia, buildPhotoMessage, buildDocumentMessage, buildVideoMessa
 import { computeNextRun } from './scheduler.js';
 import { logger } from './logger.js';
 import { randomUUID } from 'crypto';
+import { generateImage } from './imagine.js';
 
 // Voice mode toggle per chat — default ON for allowed chat
 const voiceMode = new Set<string>(ALLOWED_CHAT_ID ? [ALLOWED_CHAT_ID] : []);
@@ -486,6 +487,28 @@ export function createBot(): Bot {
     }
   });
 
+  bot.command('imagine', async (ctx) => {
+    if (!isAuthorised(ctx.chat.id)) return;
+
+    const prompt = ctx.message?.text?.replace('/imagine', '').trim();
+    if (!prompt) {
+      await ctx.reply('Usage: /imagine <your prompt>');
+      return;
+    }
+
+    const statusMsg = await ctx.reply('🎨 Generating image...', { parse_mode: 'HTML' });
+
+    try {
+      const imageBuffer = await generateImage(prompt);
+      await ctx.api.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
+      await ctx.replyWithPhoto(new InputFile(imageBuffer, 'image.png'), { caption: prompt });
+    } catch (err) {
+      logger.error({ err }, 'Image generation error');
+      const msg = err instanceof Error ? err.message : String(err);
+      await ctx.api.editMessageText(ctx.chat.id, statusMsg.message_id, `<b>Failed</b>\n<code>${msg}</code>`, { parse_mode: 'HTML' }).catch(() => {});
+    }
+  });
+
   bot.command('restart', async (ctx) => {
     if (!isAuthorised(ctx.chat.id)) return;
     await ctx.reply('Restarting bot service...');
@@ -633,6 +656,7 @@ export function createBot(): Bot {
     { command: 'checkpoint', description: 'Save summary to memory (high salience)' },
     { command: 'schedule', description: 'list|create|delete|pause|resume tasks' },
     { command: 'provider', description: 'Switch provider: claude or codex' },
+    { command: 'imagine', description: 'Generate an image with Nano Banana (Gemini)' },
     { command: 'restart', description: 'Restart the bot service' },
     { command: 'chatid', description: 'Display your Telegram chat ID' },
   ]).catch((err) => logger.warn({ err }, 'setMyCommands failed (non-fatal)'));
