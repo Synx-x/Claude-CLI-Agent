@@ -5,7 +5,7 @@ import { STORE_DIR, TELEGRAM_BOT_TOKEN, ALLOWED_CHAT_ID, PROJECT_ROOT } from './
 import { initDatabase } from './db.js';
 import { runDecaySweep } from './memory.js';
 import { cleanupOldUploads } from './media.js';
-import { createBot } from './bot.js';
+import { createBot, getProviderStatus } from './bot.js';
 import { initScheduler, stopScheduler } from './scheduler.js';
 import { logger } from './logger.js';
 
@@ -116,7 +116,7 @@ async function main(): Promise<void> {
         // Notify owner that bot is online
         if (ALLOWED_CHAT_ID) {
           try {
-            await bot.api.sendMessage(Number(ALLOWED_CHAT_ID), '🟢 ClaudeClaw is online');
+              await bot.api.sendMessage(Number(ALLOWED_CHAT_ID), `🟢 ClaudeClaw is online \n\n Provider: ${getProviderStatus()}`);
           } catch (e) {
             logger.warn({ err: e }, 'Failed to send startup notification');
           }

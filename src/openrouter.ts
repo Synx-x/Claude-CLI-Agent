@@ -36,7 +36,10 @@ export async function runOpenRouter(message: string, model: string): Promise<str
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: 'user', content: message }],
+      messages: [
+        { role: 'system', content: `You are ${model}, running via OpenRouter. If asked what model you are, say "${model} via OpenRouter".` },
+        { role: 'user', content: message },
+      ],
     }),
   });
   if (!res.ok) {

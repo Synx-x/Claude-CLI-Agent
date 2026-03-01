@@ -64,6 +64,14 @@ export function initDatabase(): void {
     END
   `);
 
+  // Key-value store for persistent state
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS kv (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+
   // Scheduler table
   d.exec(`
     CREATE TABLE IF NOT EXISTS scheduled_tasks (
@@ -156,6 +164,17 @@ export function insertCheckpoint(chatId: string, summary: string): void {
     INSERT INTO memories (chat_id, topic_key, content, sector, salience, created_at, accessed_at)
     VALUES (?, 'checkpoint', ?, 'semantic', 5.0, ?, ?)
   `).run(chatId, summary, now, now);
+}
+
+// --- KV store ---
+
+export function kvGet(key: string): string | undefined {
+  const row = getDb().prepare('SELECT value FROM kv WHERE key = ?').get(key) as { value: string } | undefined;
+  return row?.value;
+}
+
+export function kvSet(key: string, value: string): void {
+  getDb().prepare('INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value);
 }
 
 // --- Scheduler CRUD ---

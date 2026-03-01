@@ -7,7 +7,7 @@ import {
   MAX_MESSAGE_LENGTH,
   TYPING_REFRESH_MS,
 } from './config.js';
-import { getSession, setSession, clearSession, getMemoryCount, createTask, listTasks, deleteTask, pauseTask, resumeTask, insertCheckpoint } from './db.js';
+import { getSession, setSession, clearSession, getMemoryCount, createTask, listTasks, deleteTask, pauseTask, resumeTask, insertCheckpoint, kvGet, kvSet } from './db.js';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { execFile } from 'child_process';
@@ -118,7 +118,8 @@ async function handleMessage(ctx: Context, rawText: string, forceVoiceReply = fa
 
   // Build memory context
   const memoryContext = await buildMemoryContext(chatId, rawText);
-  const fullMessage = memoryContext ? `${memoryContext}\n\n${rawText}` : rawText;
+  const formatInstruction = '\n\n[Use rich Telegram-compatible Markdown to make your response as clear and readable as possible: **bold** for key terms and headers, _italic_ for emphasis, `inline code` for technical terms, ```fenced code blocks``` for multi-line code, [links](url) for URLs, numbered or bullet lists for steps/options, and bold labels instead of tables. Default to structured formatting — plain prose only for short conversational replies. Never use HTML or markdown tables. Do not announce or describe your formatting choices — just apply them.]';
+  const fullMessage = (memoryContext ? `${memoryContext}\n\n${rawText}` : rawText) + formatInstruction;
 
   // Get existing session
   const sessionId = getSession(chatId);
@@ -231,12 +232,29 @@ async function handleMessage(ctx: Context, rawText: string, forceVoiceReply = fa
   }
 }
 
+export function getProviderStatus(): string {
+  const provider = ALLOWED_CHAT_ID ? (activeProvider.get(ALLOWED_CHAT_ID) ?? 'claude') : 'claude';
+  if (provider === 'openrouter') return `OpenRouter — ${openRouterModel}`;
+  if (provider === 'codex') return 'OpenAI Codex';
+  return 'Claude';
+}
+
 export function createBot(): Bot {
   if (!TELEGRAM_BOT_TOKEN) {
     throw new Error('TELEGRAM_BOT_TOKEN is not set. Run: npm run setup');
   }
 
   const bot = new Bot(TELEGRAM_BOT_TOKEN);
+
+  // Restore last provider + model from persistent state
+  if (ALLOWED_CHAT_ID) {
+    const savedProvider = kvGet(`provider:${ALLOWED_CHAT_ID}`);
+    const savedModel = kvGet('openrouter:model');
+    if (savedProvider === 'claude' || savedProvider === 'codex' || savedProvider === 'openrouter') {
+      activeProvider.set(ALLOWED_CHAT_ID, savedProvider);
+    }
+    if (savedModel) setOpenRouterModel(savedModel);
+  }
 
   // --- Commands ---
 
@@ -377,6 +395,7 @@ export function createBot(): Bot {
 
     if (arg === 'claude' || arg === 'codex') {
       activeProvider.set(chatId, arg);
+      kvSet(`provider:${chatId}`, arg);
       await ctx.reply(`Switched to **${arg}**. All messages will now go to ${arg === 'codex' ? 'OpenAI Codex' : 'Claude'}.`);
       return;
     }
@@ -456,6 +475,8 @@ export function createBot(): Bot {
 
       setOpenRouterModel(model.id);
       activeProvider.set(chatId, 'openrouter');
+      kvSet(`provider:${chatId}`, 'openrouter');
+      kvSet('openrouter:model', model.id);
 
       await ctx.editMessageText(
         `✅ Switched to OpenRouter\nModel: <b>${model.name}</b>\n<code>${model.id}</code>`,
@@ -601,7 +622,7 @@ export function createBot(): Bot {
     logger.error({ err: err.error }, 'Bot error');
   });
 
-  // Register commands in Telegram UI menu with detailed descriptions
+  // Register commands in Telegram UI menu (non-fatal on rate limit)
   bot.api.setMyCommands([
     { command: 'start', description: 'Welcome + list all commands' },
     { command: 'newchat', description: 'Clear session, start fresh conversation' },
@@ -614,7 +635,7 @@ export function createBot(): Bot {
     { command: 'provider', description: 'Switch provider: claude or codex' },
     { command: 'restart', description: 'Restart the bot service' },
     { command: 'chatid', description: 'Display your Telegram chat ID' },
-  ]);
+  ]).catch((err) => logger.warn({ err }, 'setMyCommands failed (non-fatal)'));
 
   return bot;
 }
