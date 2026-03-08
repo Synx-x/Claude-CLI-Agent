@@ -20,6 +20,7 @@ export const OPENAI_API_KEY = env['OPENAI_API_KEY'] ?? '';
 // Voice TTS
 export const ELEVENLABS_API_KEY = env['ELEVENLABS_API_KEY'] ?? '';
 export const ELEVENLABS_VOICE_ID = env['ELEVENLABS_VOICE_ID'] ?? '';
+export const UNREAL_SPEECH_API_KEY = env['UNREAL_SPEECH_API_KEY'] ?? '';
 
 // Video
 export const GOOGLE_API_KEY = env['GOOGLE_API_KEY'] ?? '';

@@ -41,6 +41,7 @@ If you need clarification, ask one short question.
 | `todo` | tasks, what's on my plate |
 | `agent-browser` | browse, scrape, click, fill form |
 | `maestro` | parallel tasks, scale output |
+| `replay` | replay session, show me when we did X, find session about Y |
 
 ## Scheduling Tasks
 

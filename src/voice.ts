@@ -1,14 +1,14 @@
 import { readFileSync, renameSync } from 'fs';
 import { basename, dirname, resolve } from 'path';
 import { request } from 'https';
-import { GROQ_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, GOOGLE_API_KEY } from './config.js';
+import { GROQ_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, GOOGLE_API_KEY, UNREAL_SPEECH_API_KEY } from './config.js';
 import { logger } from './logger.js';
 
 export function voiceCapabilities(): { sttGroq: boolean; sttOpenai: boolean; tts: boolean } {
   return {
     sttGroq: !!GROQ_API_KEY,
     sttOpenai: !!OPENAI_API_KEY,
-    tts: !!(ELEVENLABS_API_KEY && ELEVENLABS_VOICE_ID) || !!GOOGLE_API_KEY,
+    tts: !!(ELEVENLABS_API_KEY && ELEVENLABS_VOICE_ID) || !!OPENAI_API_KEY || !!UNREAL_SPEECH_API_KEY || !!GOOGLE_API_KEY,
   };
 }
 
@@ -182,17 +182,106 @@ async function synthesizeSpeechGoogle(text: string): Promise<Buffer> {
   });
 }
 
+async function synthesizeSpeechOpenAI(text: string): Promise<Buffer> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI not configured');
+  }
+
+  const { default: OpenAI } = await import('openai');
+  const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+  const response = await openai.audio.speech.create({
+    model: 'tts-1',
+    voice: 'alloy',
+    input: text,
+    response_format: 'mp3',
+  });
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function synthesizeSpeechUnrealSpeech(text: string): Promise<Buffer> {
+  if (!UNREAL_SPEECH_API_KEY) {
+    throw new Error('Unreal Speech not configured');
+  }
+
+  const payload = JSON.stringify({
+    Text: text,
+    VoiceId: 'Scarlett',
+    Bitrate: '192k',
+    Speed: '0',
+    Pitch: '1',
+    OutputFormat: 'uri',
+  });
+
+  return new Promise((resolvePromise, reject) => {
+    const req = request({
+      hostname: 'api.v7.unrealspeech.com',
+      path: '/speech',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${UNREAL_SPEECH_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk: Buffer) => chunks.push(chunk));
+      res.on('end', async () => {
+        if (res.statusCode && res.statusCode >= 400) {
+          reject(new Error(`Unreal Speech error ${res.statusCode}: ${Buffer.concat(chunks).toString()}`));
+          return;
+        }
+        try {
+          const json = JSON.parse(Buffer.concat(chunks).toString());
+          const audioUrl: string = json.OutputUri;
+          // Fetch the MP3 from the returned URL
+          const urlObj = new URL(audioUrl);
+          const audioReq = request({
+            hostname: urlObj.hostname,
+            path: urlObj.pathname + urlObj.search,
+            method: 'GET',
+          }, (audioRes) => {
+            const audioChunks: Buffer[] = [];
+            audioRes.on('data', (c: Buffer) => audioChunks.push(c));
+            audioRes.on('end', () => resolvePromise(Buffer.concat(audioChunks)));
+          });
+          audioReq.on('error', reject);
+          audioReq.end();
+        } catch (err) {
+          reject(new Error(`Failed to parse Unreal Speech response: ${err}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
 export async function synthesizeSpeech(text: string): Promise<Buffer> {
-  // Try ElevenLabs first
   if (ELEVENLABS_API_KEY && ELEVENLABS_VOICE_ID) {
     try {
       return await synthesizeSpeechElevenLabs(text);
     } catch (err) {
-      logger.warn({ err }, 'ElevenLabs TTS failed, falling back to Google');
+      logger.warn({ err }, 'ElevenLabs TTS failed, trying OpenAI');
     }
   }
 
-  // Fall back to Google TTS
+  if (OPENAI_API_KEY) {
+    try {
+      return await synthesizeSpeechOpenAI(text);
+    } catch (err) {
+      logger.warn({ err }, 'OpenAI TTS failed, trying Unreal Speech');
+    }
+  }
+
+  if (UNREAL_SPEECH_API_KEY) {
+    try {
+      return await synthesizeSpeechUnrealSpeech(text);
+    } catch (err) {
+      logger.warn({ err }, 'Unreal Speech TTS failed, trying Google');
+    }
+  }
+
   if (GOOGLE_API_KEY) {
     return synthesizeSpeechGoogle(text);
   }
