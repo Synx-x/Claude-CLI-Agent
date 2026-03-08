@@ -8,7 +8,7 @@ export function voiceCapabilities(): { sttGroq: boolean; sttOpenai: boolean; tts
   return {
     sttGroq: !!GROQ_API_KEY,
     sttOpenai: !!OPENAI_API_KEY,
-    tts: !!(ELEVENLABS_API_KEY && ELEVENLABS_VOICE_ID) || !!OPENAI_API_KEY || !!UNREAL_SPEECH_API_KEY || !!GOOGLE_API_KEY,
+    tts: !!(ELEVENLABS_API_KEY && ELEVENLABS_VOICE_ID) || !!OPENAI_API_KEY || !!UNREAL_SPEECH_API_KEY,
   };
 }
 
@@ -135,53 +135,6 @@ async function synthesizeSpeechElevenLabs(text: string): Promise<Buffer> {
   });
 }
 
-async function synthesizeSpeechGoogle(text: string): Promise<Buffer> {
-  if (!GOOGLE_API_KEY) {
-    throw new Error('Google TTS not configured');
-  }
-
-  const payload = JSON.stringify({
-    input: { text },
-    voice: { languageCode: 'en-US', name: 'en-US-Neural2-C' },
-    audioConfig: { audioEncoding: 'MP3' },
-  });
-
-  return new Promise((resolvePromise, reject) => {
-    const req = request({
-      hostname: 'texttospeech.googleapis.com',
-      path: '/v1/text:synthesize?key=' + GOOGLE_API_KEY,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      },
-    }, (res) => {
-      const chunks: Buffer[] = [];
-      res.on('data', (chunk: Buffer) => chunks.push(chunk));
-      res.on('end', () => {
-        if (res.statusCode && res.statusCode >= 400) {
-          reject(new Error(`Google TTS error ${res.statusCode}`));
-          return;
-        }
-        try {
-          const response = JSON.parse(Buffer.concat(chunks).toString());
-          const audioContent = response.audioContent;
-          if (!audioContent) {
-            reject(new Error('No audio content in response'));
-            return;
-          }
-          resolvePromise(Buffer.from(audioContent, 'base64'));
-        } catch (err) {
-          reject(new Error(`Failed to parse Google TTS response: ${err}`));
-        }
-      });
-    });
-    req.on('error', reject);
-    req.write(payload);
-    req.end();
-  });
-}
-
 async function synthesizeSpeechOpenAI(text: string): Promise<Buffer> {
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI not configured');
@@ -275,15 +228,7 @@ export async function synthesizeSpeech(text: string): Promise<Buffer> {
   }
 
   if (UNREAL_SPEECH_API_KEY) {
-    try {
-      return await synthesizeSpeechUnrealSpeech(text);
-    } catch (err) {
-      logger.warn({ err }, 'Unreal Speech TTS failed, trying Google');
-    }
-  }
-
-  if (GOOGLE_API_KEY) {
-    return synthesizeSpeechGoogle(text);
+    return await synthesizeSpeechUnrealSpeech(text);
   }
 
   throw new Error('No TTS provider configured');

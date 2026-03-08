@@ -8,3 +8,5 @@ workspace/
 /.vs
 **/*.mp3
 downloads/
+replay-browser/
+replay-*.html
