@@ -130,15 +130,15 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
   <div id="sidebar-scroll">
     
     <div class="month-group" data-month="Mar 2026">
-      <div class="month-label">
-        <span class="month-toggle" onclick="toggleMonth(this)" title="Collapse/expand">▼</span>
+      <div class="month-label" onclick="toggleMonth(event)" style="cursor:pointer">
+        <span class="month-toggle" title="Collapse/expand">▼</span>
         Mar 2026
       </div>
       <div class="month-content">
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               Today
             </div>
             <div class="day-content">
@@ -147,8 +147,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
                      data-src="session-f32649ce-8698-4470-9a18-8c6d584dd76b.html"
                      onclick="loadSession(this)">
                   <div class="session-snippet">use claude replay to replay last session</div>
-                  <div class="session-meta">08:05 &middot; 232 turns</div>
-                  <div class="session-stats cost-high">$10.2 &middot; 1.1M tok &middot; sonnet</div>
+                  <div class="session-meta">08:05 &middot; 238 turns</div>
+                  <div class="session-stats cost-high">$10.3 &middot; 1.1M tok &middot; sonnet</div>
                 </div>
               
                 <div class="session-item"
@@ -251,8 +251,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
           </div>
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               Yesterday
             </div>
             <div class="day-content">
@@ -325,8 +325,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
           </div>
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               6 Mar 2026
             </div>
             <div class="day-content">
@@ -343,8 +343,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
           </div>
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               5 Mar 2026
             </div>
             <div class="day-content">
@@ -417,8 +417,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
           </div>
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               3 Mar 2026
             </div>
             <div class="day-content">
@@ -443,8 +443,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
           </div>
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               1 Mar 2026
             </div>
             <div class="day-content">
@@ -816,15 +816,15 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
     </div>
     
     <div class="month-group" data-month="Feb 2026">
-      <div class="month-label">
-        <span class="month-toggle" onclick="toggleMonth(this)" title="Collapse/expand">▼</span>
+      <div class="month-label" onclick="toggleMonth(event)" style="cursor:pointer">
+        <span class="month-toggle" title="Collapse/expand">▼</span>
         Feb 2026
       </div>
       <div class="month-content">
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               27 Feb 2026
             </div>
             <div class="day-content">
@@ -1017,8 +1017,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
           </div>
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               28 Feb 2026
             </div>
             <div class="day-content">
@@ -1579,8 +1579,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
           </div>
         
           <div class="day-group">
-            <div class="day-label">
-              <span class="day-toggle" onclick="toggleDay(this)" title="Collapse/expand">▼</span>
+            <div class="day-label" onclick="toggleDay(event)" style="cursor:pointer">
+              <span class="day-toggle" title="Collapse/expand">▼</span>
               26 Feb 2026
             </div>
             <div class="day-content">
@@ -1645,10 +1645,10 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
       const dayMap = byMonth.get(monthKey);
       const monthCollapsed = localStorage.getItem('month-' + monthKey) === '1' ? ' collapsed' : '';
       html += '<div class="month-group' + monthCollapsed + '" data-month="' + esc(monthKey) + '">';
-      html += '<div class="month-label"><span class="month-toggle" onclick="toggleMonth(event)" title="Collapse/expand">▼</span>' + esc(monthKey) + '</div>';
+      html += '<div class="month-label" onclick="toggleMonth(event)" style="cursor:pointer"><span class="month-toggle" title="Collapse/expand">▼</span>' + esc(monthKey) + '</div>';
       html += '<div class="month-content">';
       for (const [dayLabel, items] of dayMap) {
-        html += '<div class="day-group"><div class="day-label"><span class="day-toggle" onclick="toggleDay(event)" title="Collapse/expand">▼</span>' + esc(dayLabel) + '</div><div class="day-content">';
+        html += '<div class="day-group"><div class="day-label" onclick="toggleDay(event)" style="cursor:pointer"><span class="day-toggle" title="Collapse/expand">▼</span>' + esc(dayLabel) + '</div><div class="day-content">';
         for (const s of items) {
           const isActive = s.htmlName === activeSrc;
           const modelStr = (s.models && s.models.length > 0) ? shortModelName(s.models[0]) : 'claude';
