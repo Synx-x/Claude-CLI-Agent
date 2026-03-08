@@ -44,6 +44,9 @@ body {
 }
 .session-item.active .session-snippet { color: #7aa2f7; }
 .session-meta { font-size: 10px; color: #565f89; margin-top: 2px; }
+.session-stats { font-size: 9px; color: #7aa2f7; margin-top: 3px; font-weight: 500; }
+.session-stats.cost-mid { color: #e0af68; }
+.session-stats.cost-high { color: #f7768e; }
 #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 #player-frame { width: 100%; height: 100%; border: none; background: #1a1b26; }
 #empty-state { display: flex; align-items: center; justify-content: center; height: 100%; color: #565f89; }
@@ -66,6 +69,14 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
 .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinning { display: inline-block; animation: spin 0.7s linear infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+#live-btn { font-size: 11px; padding: 2px 6px; border-radius: 10px; letter-spacing: 0.03em; }
+#live-btn.live-on {
+  color: #9ece6a; border: 1px solid #9ece6a33; background: #9ece6a15;
+}
+#live-btn.live-on .live-dot { animation: pulse 1.4s ease-in-out infinite; }
+.live-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor; margin-right: 3px; vertical-align: middle; }
 #sync-toast {
   display: none; position: fixed; bottom: 14px; right: 14px; z-index: 1000;
   background: #1e2030; border: 1px solid #7aa2f7; color: #c0caf5;
@@ -82,6 +93,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
     <h2>Sessions</h2>
     <span class="session-count" id="session-count">170</span>
     <span class="hdr-spacer"></span>
+    <button class="icon-btn" id="live-btn" onclick="toggleLive()" title="Toggle live follow mode"><span class="live-dot"></span>Live</button>
     <button class="icon-btn" id="sync-btn" onclick="syncNow()" title="Sync to latest">&#x21bb;</button>
     <button class="icon-btn" id="close-btn" onclick="toggleSidebar()" title="Collapse">&#10005;</button>
   </div>
@@ -94,7 +106,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              data-src="session-f32649ce-8698-4470-9a18-8c6d584dd76b.html"
              onclick="loadSession(this)">
           <div class="session-snippet">use claude replay to replay last session</div>
-          <div class="session-meta">08:05 &middot; 175 turns</div>
+          <div class="session-meta">08:05 &middot; 212 turns</div>
+          <div class="session-stats cost-high">$9.7 &middot; 1.0M tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -102,6 +115,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">[Memory context] - User: [07:12:46.771] ERROR (30316): TTS failed, skipping voice reply     err: {       &quot;type&quot;: &quot;Error&quot;</div>
           <div class="session-meta">07:18 &middot; 8 turns</div>
+          <div class="session-stats cost-mid">$2.57 &middot; 130k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -109,6 +123,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">070437ce-6354-4180-ab6d-cd0e554c2339</div>
           <div class="session-meta">08:43 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -116,6 +131,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">help me use claude-replay its in repos folder, i want to read your session with it</div>
           <div class="session-meta">07:28 &middot; 24 turns</div>
+          <div class="session-stats">$0.35 &middot; 35k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -123,6 +139,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8cb10ada-e4bd-4766-827e-9e51ccf7454c</div>
           <div class="session-meta">07:41 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -130,6 +147,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">2bb77280-f29d-4e7c-b258-aeb6162f0293</div>
           <div class="session-meta">07:19 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -137,6 +155,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">a36edcf2-1cf3-4511-9d58-7239ebf51e86</div>
           <div class="session-meta">07:18 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -144,6 +163,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">[Memory context] - User: [07:12:46.771] ERROR (30316): TTS failed, skipping voice reply     err: {       &quot;type&quot;: &quot;Error&quot;</div>
           <div class="session-meta">07:14 &middot; 15 turns</div>
+          <div class="session-stats">$0.34 &middot; 46k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -151,6 +171,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">540eb9dc-19f5-40bb-95c4-ec03c4e99b99</div>
           <div class="session-meta">07:10 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -158,6 +179,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">[06:55:40.955] ERROR (38160): Another instance is already running ΓÇö refusing to start     oldPid: 34972</div>
           <div class="session-meta">06:55 &middot; 56 turns</div>
+          <div class="session-stats cost-mid">$1.47 &middot; 119k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -165,6 +187,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">hello</div>
           <div class="session-meta">07:07 &middot; 1 turn</div>
+          <div class="session-stats">$0.01 &middot; 3 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -172,6 +195,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">hello</div>
           <div class="session-meta">07:07 &middot; 1 turn</div>
+          <div class="session-stats">$0.01 &middot; 3 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -179,6 +203,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">hello</div>
           <div class="session-meta">07:07 &middot; 1 turn</div>
+          <div class="session-stats">$0.02 &middot; 3k tok &middot; sonnet</div>
         </div>
       
     </div>
@@ -191,6 +216,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">3899ef85-ad22-4bc1-8184-5a0088d91564</div>
           <div class="session-meta">10:01 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -198,6 +224,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">bots bricked now sicne changes</div>
           <div class="session-meta">09:57 &middot; 23 turns</div>
+          <div class="session-stats cost-mid">$4.36 &middot; 143k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -205,6 +232,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">ERROR (30212): Another instance is already running ΓÇö refusing to start     oldPid: 6956</div>
           <div class="session-meta">09:56 &middot; 5 turns</div>
+          <div class="session-stats cost-mid">$0.64 &middot; 30k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -212,6 +240,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">09:46 &middot; 10 turns</div>
+          <div class="session-stats cost-mid">$0.87 &middot; 43k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -219,6 +248,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">09:45 &middot; 3 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -226,6 +256,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">fix the issues my telegram bot has, check logs</div>
           <div class="session-meta">09:36 &middot; 26 turns</div>
+          <div class="session-stats cost-mid">$0.90 &middot; 130k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -233,6 +264,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">09:32 &middot; 16 turns</div>
+          <div class="session-stats">$0.17 &middot; 29k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -240,6 +272,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">67ac92b5-51a2-4fc8-b838-ed53c96c89d7</div>
           <div class="session-meta">06:43 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
     </div>
@@ -252,6 +285,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">9a37b93e-fc34-4896-874e-1151b1beed8c</div>
           <div class="session-meta">01:32 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
     </div>
@@ -264,6 +298,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">You extract durable assistant memory from a completed exchange. Return strict JSON only. No markdown. No prose. Use this</div>
           <div class="session-meta">22:46 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -271,6 +306,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">You extract durable assistant memory from a completed exchange. Return strict JSON only. No markdown. No prose. Use this</div>
           <div class="session-meta">22:44 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -278,6 +314,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">You extract durable assistant memory from a completed exchange. Return strict JSON only. No markdown. No prose. Use this</div>
           <div class="session-meta">22:43 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -285,6 +322,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">You extract durable assistant memory from a completed exchange. Return strict JSON only. No markdown. No prose. Use this</div>
           <div class="session-meta">22:42 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -292,6 +330,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">You extract durable assistant memory from a completed exchange. Return strict JSON only. No markdown. No prose. Use this</div>
           <div class="session-meta">22:41 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -299,6 +338,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">You extract durable assistant memory from a completed exchange. Return strict JSON only. No markdown. No prose. Use this</div>
           <div class="session-meta">22:39 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -306,6 +346,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">/model</div>
           <div class="session-meta">22:36 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -313,6 +354,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">.</div>
           <div class="session-meta">22:28 &middot; 3 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
     </div>
@@ -325,6 +367,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">ping</div>
           <div class="session-meta">07:14 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -332,6 +375,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">[Memory context] - Session log 2026-03-01: **Session opened** ### Key work - Migrated Telegram reply pipeline from custo</div>
           <div class="session-meta">06:51 &middot; 1 turn</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
     </div>
@@ -344,6 +388,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">remove auto startup for windows</div>
           <div class="session-meta">14:20 &middot; 11 turns</div>
+          <div class="session-stats">$0.21 &middot; 34k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -351,6 +396,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">[Memory context] - User: do u hav ea ccess to the root file running this project | Assistant: **Access to the root folde</div>
           <div class="session-meta">13:54 &middot; 55 turns</div>
+          <div class="session-stats cost-high">$9.7 &middot; 256k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -358,6 +404,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">2d726cb9-94b8-450b-95d4-430fa4f72586</div>
           <div class="session-meta">14:20 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -365,6 +412,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">5880cec4-ec78-4fd6-addd-c322aee10d74</div>
           <div class="session-meta">14:18 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -372,6 +420,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">d918dabb-1d98-46d9-8693-90cae8797f98</div>
           <div class="session-meta">14:17 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -379,6 +428,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">4911cfe3-629e-452a-9e68-1498ade0d49d</div>
           <div class="session-meta">14:16 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -386,6 +436,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">6c2b05aa-d711-47f9-975c-735948c30abd</div>
           <div class="session-meta">14:10 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -393,6 +444,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">da1645ab-6a9c-42e3-beec-f87865b3fb37</div>
           <div class="session-meta">14:06 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -400,6 +452,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">1a77038c-0b22-4210-9f40-451cd622a9f5</div>
           <div class="session-meta">14:05 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -407,6 +460,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">when env updates, it causes a bootloop</div>
           <div class="session-meta">14:02 &middot; 15 turns</div>
+          <div class="session-stats">$0.47 &middot; 73k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -414,6 +468,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">i want to run this project on hetzner, will i be able to auth claude, codex on it?</div>
           <div class="session-meta">13:38 &middot; 42 turns</div>
+          <div class="session-stats cost-mid">$0.96 &middot; 99k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -421,6 +476,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Failed {&quot;error&quot;:{&quot;code&quot;:404,&quot;message&quot;:&quot;models/gemini-2.0-flash-preview-image-generation is not found for API version v1b</div>
           <div class="session-meta">13:34 &middot; 6 turns</div>
+          <div class="session-stats">$0.12 &middot; 13k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -428,6 +484,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">13:16 &middot; 2 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -435,6 +492,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">can u fix this mess, trying to add free image gen enhancement to /imagine command Claude, [2026-03-01 11:34 AM] 🔧 New S</div>
           <div class="session-meta">11:38 &middot; 9 turns</div>
+          <div class="session-stats cost-mid">$1.00 &middot; 215k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -442,6 +500,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">3230b62b-1dc5-4a0e-81f8-5ec9a44169c9</div>
           <div class="session-meta">11:28 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -449,6 +508,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">11:03 &middot; 35 turns</div>
+          <div class="session-stats cost-mid">$0.96 &middot; 127k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -456,6 +516,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">c7f98b7f-cd79-441d-9d9f-e43a4942f508</div>
           <div class="session-meta">11:22 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -463,6 +524,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">ecec4eb1-f32a-435c-86ff-010eb9866e9d</div>
           <div class="session-meta">11:20 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -470,6 +532,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">remove financial plugins</div>
           <div class="session-meta">10:57 &middot; 16 turns</div>
+          <div class="session-stats cost-mid">$1.16 &middot; 23k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -477,6 +540,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">10:53 &middot; 7 turns</div>
+          <div class="session-stats cost-mid">$0.64 &middot; 24k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -484,6 +548,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">remove @nul file</div>
           <div class="session-meta">10:52 &middot; 2 turns</div>
+          <div class="session-stats">$0.05 &middot; 9k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -491,6 +556,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">check logs and fix</div>
           <div class="session-meta">10:36 &middot; 51 turns</div>
+          <div class="session-stats cost-mid">$1.49 &middot; 175k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -498,6 +564,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">f181eb5c-0abd-4db2-842a-837cd5e29b89</div>
           <div class="session-meta">10:36 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -505,6 +572,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">fix █╗██╗      █████╗ ██╗    ██╗ ██╔════╝██║     ██╔══██╗██║    ██║ ██║     ██║     ███████║██║ █╗ ██║ ██║     ██║     █</div>
           <div class="session-meta">10:31 &middot; 14 turns</div>
+          <div class="session-stats cost-mid">$0.54 &middot; 74k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -512,6 +580,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">d2bc9984-bcb3-4757-91a5-9013a80f3190</div>
           <div class="session-meta">10:23 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -519,6 +588,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Claude, [2026-03-01 9:26 AM] 🟢 ClaudeClaw is online ., [2026-03-01 9:26 AM] /provider Claude, [2026-03-01 9:26 AM] Acti</div>
           <div class="session-meta">09:28 &middot; 103 turns</div>
+          <div class="session-stats cost-mid">$3.58 &middot; 175k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -526,6 +596,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">1101c5ce-7516-46fb-8214-79c2f6d56268</div>
           <div class="session-meta">09:43 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -533,6 +604,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">e43e2903-00b9-4d14-b384-cb221aeb4750</div>
           <div class="session-meta">09:43 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -540,6 +612,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">67bfa128-cba0-4892-bc6d-4aa35e36656d</div>
           <div class="session-meta">09:42 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -547,6 +620,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">e63a1bee-234f-4328-a569-2a4a7d7a52ce</div>
           <div class="session-meta">09:34 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -554,6 +628,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">4312ff46-f0e6-4d7d-93f8-a161ecd5a263</div>
           <div class="session-meta">09:31 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -561,6 +636,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">1c5b07a4-c930-4a95-9bbf-14360f34404d</div>
           <div class="session-meta">09:27 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -568,6 +644,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">im still getting the same flow after restarting, no auto swtichingClaude, [2026-03-01 9:08 AM] 🟢 ClaudeClaw is online .</div>
           <div class="session-meta">09:09 &middot; 48 turns</div>
+          <div class="session-stats cost-mid">$1.46 &middot; 139k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -575,6 +652,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">47257763-13fa-409b-8362-e8adac7ad0b2</div>
           <div class="session-meta">09:15 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -582,6 +660,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">3e85a5b8-d76d-4864-b2f3-ab92aa76780c</div>
           <div class="session-meta">09:12 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -589,6 +668,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">2ab59045-a3fd-4ef5-aa35-40dbdc91e6c6</div>
           <div class="session-meta">09:12 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -596,6 +676,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">9ccc5834-5a22-43a7-88c5-57876382832f</div>
           <div class="session-meta">09:11 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -603,6 +684,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Claude, [2026-03-01 9:01 AM] 🟢 ClaudeClaw is online ., [2026-03-01 9:01 AM] /provider codex Claude, [2026-03-01 9:01 AM</div>
           <div class="session-meta">09:01 &middot; 17 turns</div>
+          <div class="session-stats">$0.46 &middot; 46k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -610,6 +692,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">if you are mid process and hit a rate limit on either claude or codex, auto switch to next available provider, surface t</div>
           <div class="session-meta">08:57 &middot; 8 turns</div>
+          <div class="session-stats">$0.31 &middot; 50k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -617,6 +700,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">on telegram it tells me to always check logs but i want the log details to be nicely formatted and returned on telegram </div>
           <div class="session-meta">08:53 &middot; 9 turns</div>
+          <div class="session-stats">$0.32 &middot; 50k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -624,6 +708,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">bb3828d1-85cd-42e0-a1d0-07ef85bbbddc</div>
           <div class="session-meta">08:52 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -631,6 +716,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Claude, [2026-03-01 8:49 AM] Switched to **codex**. All messages will now go to OpenAI Codex. ., [2026-03-01 8:49 AM] pi</div>
           <div class="session-meta">08:50 &middot; 9 turns</div>
+          <div class="session-stats">$0.40 &middot; 63k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -638,6 +724,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">i did run the npm but not in this repo, does that matter?    err: {       &quot;type&quot;: &quot;Error&quot;,       &quot;message&quot;: &quot;codex CLI n</div>
           <div class="session-meta">08:45 &middot; 12 turns</div>
+          <div class="session-stats">$0.25 &middot; 23k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -645,6 +732,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">where did we leave off</div>
           <div class="session-meta">08:13 &middot; 92 turns</div>
+          <div class="session-stats cost-mid">$2.43 &middot; 231k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -652,6 +740,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">1504d8b1-ac66-4807-b0df-be804ff6edb4</div>
           <div class="session-meta">08:36 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
     </div>
@@ -664,6 +753,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Ping</div>
           <div class="session-meta">22:57 &middot; 219 turns</div>
+          <div class="session-stats cost-high">$60.4 &middot; 2.0M tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -671,6 +761,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">3d371d2e-94b4-477c-9fdf-55c06d292934</div>
           <div class="session-meta">23:26 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -678,6 +769,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">6801a043-79f9-4e35-8b13-efd7e77f6e93</div>
           <div class="session-meta">23:26 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -685,6 +777,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">how do i use eleven labs voice message in telegram</div>
           <div class="session-meta">22:58 &middot; 45 turns</div>
+          <div class="session-stats cost-mid">$2.36 &middot; 177k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -692,6 +785,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8627fa78-9e41-4114-852e-6e6f80279179</div>
           <div class="session-meta">23:22 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -699,6 +793,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">2838a295-65bb-4aca-97bb-da909eff083b</div>
           <div class="session-meta">23:21 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -706,6 +801,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">122120b8-8c83-48fb-9951-a411fda7b0af</div>
           <div class="session-meta">23:18 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -713,6 +809,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">6db0a891-22e0-40df-a4fa-ac40e9c6b02f</div>
           <div class="session-meta">23:17 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -720,6 +817,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">38303f79-e2c5-4c85-877f-b2e87c207303</div>
           <div class="session-meta">23:16 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -727,6 +825,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">7ba1acea-9a9d-4dff-b0f7-56152d6ec505</div>
           <div class="session-meta">23:16 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -734,6 +833,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">437615fe-b0a5-4075-b62a-864038e4d74d</div>
           <div class="session-meta">23:15 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -741,6 +841,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">33a95240-3847-480d-bae5-e7e699397d43</div>
           <div class="session-meta">23:11 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -748,6 +849,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">c62a2fac-d7b6-4d60-93c8-3176673bcf08</div>
           <div class="session-meta">23:02 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -755,6 +857,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">f2dc8807-a551-42ec-89b1-b5e6a90a0ab7</div>
           <div class="session-meta">22:59 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -762,6 +865,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">6b3542a9-cfc6-4b99-a7e7-e2e19b14602d</div>
           <div class="session-meta">22:58 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -769,6 +873,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">b0e3ff3c-fc67-4887-be9e-21074df0b789</div>
           <div class="session-meta">22:57 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -776,6 +881,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">@REBUILD_PROMPT.md intitalize</div>
           <div class="session-meta">22:38 &middot; 55 turns</div>
+          <div class="session-stats cost-high">$8.0 &middot; 176k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -783,6 +889,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Hey</div>
           <div class="session-meta">22:51 &middot; 1 turn</div>
+          <div class="session-stats">$0.03 &middot; 324 tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -790,6 +897,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Ping</div>
           <div class="session-meta">22:51 &middot; 1 turn</div>
+          <div class="session-stats">$0.07 &middot; 3k tok &middot; opus</div>
         </div>
       
         <div class="session-item"
@@ -797,6 +905,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">@REBUILD_PROMPT.md please ensure all systems operational</div>
           <div class="session-meta">22:26 &middot; 31 turns</div>
+          <div class="session-stats cost-mid">$0.90 &middot; 90k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -804,6 +913,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">reply with just the word: pong</div>
           <div class="session-meta">22:31 &middot; 1 turn</div>
+          <div class="session-stats">$0.01 &middot; 3 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -811,6 +921,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">reply with just the word: pong</div>
           <div class="session-meta">22:31 &middot; 1 turn</div>
+          <div class="session-stats">$0.02 &middot; 4k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -818,6 +929,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">Hey</div>
           <div class="session-meta">00:30 &middot; 34 turns</div>
+          <div class="session-stats cost-mid">$0.70 &middot; 95k tok &middot; sonnet</div>
         </div>
       
     </div>
@@ -830,6 +942,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">18:56 &middot; 3 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -837,6 +950,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">err: {       &quot;type&quot;: &quot;GrammyError&quot;,       &quot;message&quot;: &quot;Call to 'sendMessage' failed! (400: Bad Request: message text is e</div>
           <div class="session-meta">18:03 &middot; 40 turns</div>
+          <div class="session-stats cost-mid">$1.16 &middot; 117k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -844,6 +958,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">e8952d12-9b82-461a-bfd5-7e6f83b6290f</div>
           <div class="session-meta">18:33 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -851,6 +966,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">0e938ac0-910f-4089-b588-5716f82bffd8</div>
           <div class="session-meta">18:31 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -858,6 +974,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">49937719-173b-4471-ad32-77b1f1a23203</div>
           <div class="session-meta">18:30 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -865,6 +982,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">ef747740-5134-4ed4-add2-5606e39109da</div>
           <div class="session-meta">18:26 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -872,6 +990,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">eb18eecc-7f4a-409f-b955-a2d997fce385</div>
           <div class="session-meta">18:23 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -879,6 +998,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">90dec1ad-7a53-422b-bc2d-655f12711f62</div>
           <div class="session-meta">18:15 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -886,6 +1006,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">bb00e770-3b83-4a2b-bb58-b38a2db36515</div>
           <div class="session-meta">18:11 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -893,6 +1014,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">6cb95bc5-3cec-4174-b646-05b75b99534c</div>
           <div class="session-meta">18:02 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -900,6 +1022,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">2c3b0e59-2fc5-4ac2-aaec-0d7ff8a2a65f</div>
           <div class="session-meta">17:59 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -907,6 +1030,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8ad419bf-2e40-4152-a0bf-795084dbcedb</div>
           <div class="session-meta">17:56 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -914,6 +1038,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">39335bf7-64ab-4fce-8441-996a535cfad4</div>
           <div class="session-meta">17:56 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -921,6 +1046,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8476bc4c-958d-4c59-83cd-f1a6dd52a951</div>
           <div class="session-meta">16:44 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -928,6 +1054,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">5b583121-0835-4a80-8c6b-fbacda43d0f9</div>
           <div class="session-meta">16:01 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -935,6 +1062,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">4179b845-79fb-4181-ba48-3d967f6f6066</div>
           <div class="session-meta">16:00 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -942,6 +1070,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">3ab319df-d3b1-47a9-8b67-e193fa120b47</div>
           <div class="session-meta">15:59 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -949,6 +1078,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">802c9986-fe3b-41f9-bc5a-1b7f593dc151</div>
           <div class="session-meta">15:58 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -956,6 +1086,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">1b7e55e7-7d9d-4c65-a95e-13f526cdfb13</div>
           <div class="session-meta">13:57 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -963,6 +1094,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">49b5db3c-c160-40d6-a63a-3240b589e89d</div>
           <div class="session-meta">13:54 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -970,6 +1102,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">864e344d-8d20-4fc6-b25c-fc45f10ee57b</div>
           <div class="session-meta">13:50 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -977,6 +1110,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">d548ebf8-4196-4b3c-af2e-ef8b1edd1b57</div>
           <div class="session-meta">13:45 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -984,6 +1118,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8a411f9f-19f0-42ae-b6c3-5cf786a40240</div>
           <div class="session-meta">13:44 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -991,6 +1126,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8c1671fa-2141-4d51-a310-f77ccbf3237d</div>
           <div class="session-meta">13:42 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -998,6 +1134,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">59621ad1-5938-4d16-aa2b-3e1cc9b9cb71</div>
           <div class="session-meta">13:40 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1005,6 +1142,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">f5a33457-89fd-4513-803a-74636e946acd</div>
           <div class="session-meta">13:36 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1012,6 +1150,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">25e008f3-ec90-4c5b-8491-c83466f8dce6</div>
           <div class="session-meta">13:34 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1019,6 +1158,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">3a22b47d-485e-4fd6-95c0-5e1878806cbc</div>
           <div class="session-meta">13:32 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1026,6 +1166,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&quot;type&quot;: &quot;Error&quot;,       &quot;message&quot;: &quot;Claude Code process exited with code 1&quot;,       &quot;stack&quot;:           Error: Claude Code </div>
           <div class="session-meta">10:01 &middot; 2 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -1033,6 +1174,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">339ea6df-2e47-46b6-8437-850fc4033d4e</div>
           <div class="session-meta">10:00 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1040,6 +1182,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">cfd17dc2-f300-4c11-8bed-87aac317a70f</div>
           <div class="session-meta">09:59 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1047,6 +1190,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">771e43d3-6a35-445b-b08b-4c5abe0b7d73</div>
           <div class="session-meta">09:57 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1054,6 +1198,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">192f8c40-3387-44d2-b97d-1a53e7e19094</div>
           <div class="session-meta">09:55 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1061,6 +1206,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">20305aed-14b3-4cab-9571-a232ae4cd244</div>
           <div class="session-meta">09:54 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1068,6 +1214,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">b224d973-e2c0-49a7-a86d-a2c7b54b9601</div>
           <div class="session-meta">09:52 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1075,6 +1222,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">i noticed the ps1 will work only on my machine as we hardcode paths</div>
           <div class="session-meta">09:50 &middot; 6 turns</div>
+          <div class="session-stats">$0.08 &middot; 8k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -1082,6 +1230,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">72ee02ed-2d08-4c7f-94f8-c92212537b5e</div>
           <div class="session-meta">09:50 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1089,6 +1238,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">24c0f01e-822d-44b5-a6d9-808b123694d6</div>
           <div class="session-meta">09:49 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1096,6 +1246,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">a41806ab-f192-40f9-a23f-17a52faad832</div>
           <div class="session-meta">09:47 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1103,6 +1254,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">04bc5b89-de47-4cd1-9cf9-2aca5c7af17c</div>
           <div class="session-meta">09:45 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1110,6 +1262,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">[error 2147942402 (0x80070002) when launching `&quot; if ($LASTEXITCODE -ne 1) { break } }&quot;'] The system cannot find the file</div>
           <div class="session-meta">09:40 &middot; 5 turns</div>
+          <div class="session-stats">$0.11 &middot; 13k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -1117,6 +1270,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">[09:37:39.778] INFO (44580): Restart requested via /restart command [start] Process exited with code 1</div>
           <div class="session-meta">09:38 &middot; 11 turns</div>
+          <div class="session-stats">$0.20 &middot; 22k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -1124,6 +1278,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">&lt;local-command-caveat&gt;Caveat: The messages below were generated by the user while running local commands. DO NOT respond</div>
           <div class="session-meta">08:43 &middot; 100 turns</div>
+          <div class="session-stats cost-mid">$3.49 &middot; 325k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -1131,6 +1286,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">can u add restart to the bot menu</div>
           <div class="session-meta">09:33 &middot; 5 turns</div>
+          <div class="session-stats">$0.10 &middot; 13k tok &middot; sonnet</div>
         </div>
       
         <div class="session-item"
@@ -1138,6 +1294,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">e906e18c-81cf-4c99-b445-53a1f3fdc919</div>
           <div class="session-meta">09:30 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1145,6 +1302,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">f24b88db-b745-4220-a9ab-0c0266480b43</div>
           <div class="session-meta">09:29 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1152,6 +1310,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">ee1421fa-c79c-40c8-9745-b88e802244fe</div>
           <div class="session-meta">09:28 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1159,6 +1318,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">50cb0eb1-c37e-466d-a5c2-cd967d281d9f</div>
           <div class="session-meta">09:26 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1166,6 +1326,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">6168ec1f-0033-476a-be4f-a1b8780e4a19</div>
           <div class="session-meta">09:25 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1173,6 +1334,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">587d92b3-aa5e-49b3-93aa-b4c928995a16</div>
           <div class="session-meta">09:23 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1180,6 +1342,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">e3b655f7-adca-475e-b039-14ef53f33821</div>
           <div class="session-meta">09:15 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1187,6 +1350,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">88bc705a-d0f7-4f79-aa99-3d948f6dc258</div>
           <div class="session-meta">09:13 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1194,6 +1358,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">b58d7ff9-7e5b-44aa-b07a-3e76b93f887a</div>
           <div class="session-meta">09:12 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1201,6 +1366,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">b0c264eb-cfb1-4e49-b92c-4e7b07dad811</div>
           <div class="session-meta">09:11 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1208,6 +1374,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">1616fe5c-9dda-4804-a4e3-a3a2e072b03f</div>
           <div class="session-meta">09:10 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1215,6 +1382,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">62571547-85c8-4287-8879-c7bdce5b67de</div>
           <div class="session-meta">09:10 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1222,6 +1390,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">9417d18f-4cf7-4044-8ac5-cb78cdce46d6</div>
           <div class="session-meta">08:58 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1229,6 +1398,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">1d1c6c30-6a4d-4ab3-9b84-d9d69391fe3b</div>
           <div class="session-meta">08:57 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1236,6 +1406,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">b68236b9-c7fc-40e6-a440-f2894c9a9edb</div>
           <div class="session-meta">08:55 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1243,6 +1414,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">6dc2a29e-5ebe-444e-92c5-877e847960fd</div>
           <div class="session-meta">08:53 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1250,6 +1422,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8c8ae1c4-de34-4ccc-b540-374552d1ff7a</div>
           <div class="session-meta">08:52 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1257,6 +1430,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">e4b6cea6-d5d9-4ecb-ac2a-73c720b22e02</div>
           <div class="session-meta">08:52 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1264,6 +1438,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">8d8a9da6-afd4-4bdb-aae8-178457f893cc</div>
           <div class="session-meta">08:47 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1271,6 +1446,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">5ff434e0-585a-4818-86d3-64d5480eca77</div>
           <div class="session-meta">08:45 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1278,6 +1454,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">420c6408-f645-4b75-820a-4510db140851</div>
           <div class="session-meta">08:42 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1285,6 +1462,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">f6ba85d4-d7eb-44e5-b4c5-87d3f10a47ba</div>
           <div class="session-meta">08:42 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1292,6 +1470,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">f47ff1f9-dd15-460a-99a8-3ff6b4968aea</div>
           <div class="session-meta">08:41 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1299,6 +1478,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">047edd01-bd5f-4e2b-b15d-d5b9b8e4457b</div>
           <div class="session-meta">08:39 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
         <div class="session-item"
@@ -1306,6 +1486,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">4ca04c01-4a8a-43f9-b31b-3b7647b03c91</div>
           <div class="session-meta">08:38 &middot; 0 turns</div>
+          <div class="session-stats">$0.00 &middot; 0 tok &middot; claude</div>
         </div>
       
     </div>
@@ -1318,6 +1499,7 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
              onclick="loadSession(this)">
           <div class="session-snippet">@REBUILD_PROMPT.md execute</div>
           <div class="session-meta">23:36 &middot; 95 turns</div>
+          <div class="session-stats cost-mid">$4.10 &middot; 275k tok &middot; sonnet</div>
         </div>
       
     </div>
@@ -1331,7 +1513,8 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
 <div id="sync-toast"></div>
 
 <script>
-  const SERVE_MODE = true;
+  const SERVE_MODE = false;
+  const WATCH_MODE = true;
 
   // ── Session rendering ──────────────────────────────────────────────────────
   function renderSidebar(sessions) {
@@ -1351,9 +1534,15 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
       html += '<div class="date-group"><div class="date-label">' + esc(g.date) + '</div>';
       for (const s of g.items) {
         const isActive = s.htmlName === activeSrc;
+        const modelStr = (s.models && s.models.length > 0) ? shortModelName(s.models[0]) : 'claude';
+        const costCents = Math.round((s.totalCost || 0) * 100);
+        const costStr = '$' + (costCents < 50 ? (costCents / 100).toFixed(2) : (costCents / 100).toFixed(1)).replace(/.0+$/, '');
+        const tokenStr = formatTokens(s.totalInputTokens + s.totalOutputTokens);
+        const costClass = (s.totalCost || 0) < 0.50 ? '' : (s.totalCost || 0) < 5 ? ' cost-mid' : ' cost-high';
         html += '<div class="session-item' + (isActive ? ' active' : '') + '" data-src="' + esc(s.htmlName) + '" onclick="loadSession(this)">';
         html += '<div class="session-snippet">' + esc(s.snippet) + '</div>';
         html += '<div class="session-meta">' + (s.time ? esc(s.time) + ' &middot; ' : '') + s.turnCount + ' turn' + (s.turnCount !== 1 ? 's' : '') + '</div>';
+        html += '<div class="session-stats' + costClass + '">' + costStr + ' &middot; ' + tokenStr + ' tok &middot; ' + modelStr + '</div>';
         html += '</div>';
       }
       html += '</div>';
@@ -1376,6 +1565,20 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
 
   function esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function shortModelName(fullName) {
+    if (!fullName) return 'claude';
+    const m = fullName.toLowerCase();
+    if (m.includes('opus')) return 'opus';
+    if (m.includes('haiku')) return 'haiku';
+    return 'sonnet';
+  }
+
+  function formatTokens(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return Math.round(n / 1e3) + 'k';
+    return n;
   }
 
   // ── Jump to latest turn in player iframe ─────────────────────────────────
@@ -1461,8 +1664,19 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
     btn.innerHTML = '<span class="spinning">&#x21bb;</span>';
     btn.disabled = true;
 
+    if (WATCH_MODE) {
+      // Watch mode: inject live-data.js to update sidebar, then jump to latest in current iframe
+      injectLiveData();
+      const frame = document.getElementById('player-frame');
+      if (frame) jumpToLatestInFrame(frame);
+      btn.innerHTML = '&#x21bb;';
+      btn.disabled = false;
+      showToast('Synced');
+      return;
+    }
+
     if (!SERVE_MODE) {
-      // Static mode: just reload the page to pick up rebuilt index
+      // Static mode: reload page to pick up rebuilt index
       location.reload();
       return;
     }
@@ -1497,6 +1711,88 @@ body.sidebar-hidden #sidebar-toggle { display: flex; }
       btn.innerHTML = '&#x21bb;';
       btn.disabled = false;
     }
+  }
+
+  // ── Live follow mode ──────────────────────────────────────────────────────
+  let liveInterval = null;
+  const LIVE_INTERVAL_MS = 5000;
+
+  // JSONP callback: called when live-data.js is injected (watch mode)
+  // ts-based dedup prevents reprocessing the same live-data.js on repeated ticks.
+  let lastLiveTs = 0;
+  window.__liveUpdate__ = function(data) {
+    if (!data || !data.sessions) return;
+    if (data.ts && data.ts <= lastLiveTs) return; // already handled this build
+    if (data.ts) lastLiveTs = data.ts;
+
+    renderSidebar(data.sessions);
+    const activeEl = document.querySelector('.session-item.active');
+    const frame = document.getElementById('player-frame');
+    if (activeEl && frame && data.rebuiltIds && data.rebuiltIds.length) {
+      const activeId = activeEl.dataset.src.replace('session-', '').replace('.html', '');
+      if (data.rebuiltIds.includes(activeId)) {
+        frame.onload = () => { jumpToLatestInFrame(frame); frame.onload = null; };
+        frame.src = activeEl.dataset.src + '?t=' + Date.now();
+      }
+    }
+  };
+
+  function injectLiveData() {
+    // Remove previous script tag so the same src re-executes
+    const old = document.getElementById('live-data-script');
+    if (old) old.remove();
+    const s = document.createElement('script');
+    s.id = 'live-data-script';
+    s.src = 'live-data.js?t=' + Date.now();
+    document.head.appendChild(s);
+  }
+
+  function toggleLive() {
+    if (!SERVE_MODE && !WATCH_MODE) { showToast('Live mode requires --serve or --watch'); return; }
+    const btn = document.getElementById('live-btn');
+    if (liveInterval) {
+      // Turn off
+      clearInterval(liveInterval);
+      liveInterval = null;
+      btn.classList.remove('live-on');
+      btn.title = 'Toggle live follow mode';
+    } else {
+      // Turn on — sync immediately then on interval
+      btn.classList.add('live-on');
+      btn.title = 'Live follow active — click to stop';
+      liveTick();
+      liveInterval = setInterval(liveTick, LIVE_INTERVAL_MS);
+    }
+  }
+
+  async function liveTick() {
+    // Skip if a manual sync is already running (btn disabled)
+    const syncBtn = document.getElementById('sync-btn');
+    if (syncBtn.disabled) return;
+
+    if (WATCH_MODE) {
+      // Watch mode: inject live-data.js — the __liveUpdate__ callback handles the rest
+      injectLiveData();
+      return;
+    }
+
+    // Serve mode: POST /api/sync
+    try {
+      const r = await fetch('/api/sync', { method: 'POST' });
+      if (!r.ok) return;
+      const { sessions, rebuiltIds } = await r.json();
+      renderSidebar(sessions);
+
+      const activeEl = document.querySelector('.session-item.active');
+      const frame = document.getElementById('player-frame');
+      if (activeEl && frame && rebuiltIds.length) {
+        const activeId = activeEl.dataset.src.replace('session-', '').replace('.html', '');
+        if (rebuiltIds.includes(activeId)) {
+          frame.onload = () => { jumpToLatestInFrame(frame); frame.onload = null; };
+          frame.src = activeEl.dataset.src + '?t=' + Date.now();
+        }
+      }
+    } catch {}
   }
 
   // ── Background poll (serve mode only) ────────────────────────────────────
